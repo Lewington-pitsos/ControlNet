@@ -27,7 +27,6 @@ model.learning_rate = args.learning_rate
 model.sd_locked = args.sd_locked
 model.only_mid_control = args.only_mid_control
 
-
 # Misc
 dataset = MyDataset()
 dataloader = DataLoader(dataset, num_workers=0, batch_size=args.batch_size, shuffle=True)

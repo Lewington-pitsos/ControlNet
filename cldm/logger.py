@@ -3,7 +3,7 @@ import torch
 from pytorch_lightning.callbacks import Callback
 
 class ImageLogger(Callback):
-    def __init__(self, batch_frequency=2000, max_images=4, clamp=True, increase_log_steps=True,
+    def __init__(self, batch_frequency=2000, max_images=4, increase_log_steps=True,
                  rescale=True, disabled=False, log_on_batch_idx=False, log_first_step=False,
                  log_images_kwargs=None):
         super().__init__()
@@ -12,7 +12,6 @@ class ImageLogger(Callback):
         self.max_images = max_images
         if not increase_log_steps:
             self.log_steps = [self.batch_freq]
-        self.clamp = clamp
         self.disabled = disabled
         self.log_on_batch_idx = log_on_batch_idx
         self.log_images_kwargs = log_images_kwargs if log_images_kwargs else {}
@@ -38,11 +37,9 @@ class ImageLogger(Callback):
                 images[k] = images[k][:N]
                 if isinstance(images[k], torch.Tensor):
                     images[k] = images[k].detach().cpu()
-                    if self.clamp:
-                        images[k] = torch.clamp(images[k], -1., 1.)
 
-            images = wandb.Image(images)
-            wandb.log({"examples": images})
+            for key in images:
+                wandb.log({key: wandb.Image(images[key])})
 
             if is_train:
                 pl_module.train()
@@ -54,44 +51,51 @@ class ImageLogger(Callback):
         if not self.disabled:
             self.log_img(pl_module, batch, batch_idx, split="train")
 
-
 class ZeroConvLogger(Callback):
-  def on_train_batch_end(self, trainer, pl_module):
-      with torch.no_grad():
-        count = 0
-        bias_mean = 0
-        bias_std = 0
+    def __init__(self, batch_frequency=25) -> None:
+        super().__init__()
+        self.batch_frequency=batch_frequency
 
-        weight_mean = 0
-        weight_std = 0
+    def check_frequency(self, check_idx):
+        return check_idx % self.batch_frequency == 0
 
-        for i, c in enumerate(pl_module.control_model.zero_convs):
-        # print(type(c))
-          layer = c[0]
-          # print(type(layer))
+    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
+        if self.check_frequency(batch_idx):
+            with torch.no_grad():
+                count = 0
+                bias_mean = 0
+                bias_std = 0
+                bias_frobenius_norm = 0
 
-          bias_mean += layer.bias.mean()
-          bias_std += layer.bias.std()
+                weight_mean = 0
+                weight_std = 0
+                weight_frobenius_norm = 0
 
-          weight_mean += layer.weight.mean()
-          weight_std += layer.weight.std()
+                for i, c in enumerate(pl_module.control_model.zero_convs):
+                    layer = c[0]
 
-          wandb.log({
-              f'{i}-zc-bias-mean': layer.bias.mean(),
-              f'{i}-zc-bias-std': layer.bias.std(),
-              f'{i}-zc-bias-min': layer.bias.min(),
-              f'{i}-zc-bias-max': layer.bias.max(),
+                    bias_mean += layer.bias.mean()
+                    bias_std += layer.bias.std()
+                    bias_frobenius_norm += torch.norm(layer.bias)
 
-              f'{i}-zc-weight-mean': layer.weight.mean(),
-              f'{i}-zc-weight-std': layer.weight.std(),
-              f'{i}-zc-weight-min': layer.weight.min(),
-              f'{i}-zc-weight-max': layer.weight.max(),
-          })
-          count += 1
+                    weight_mean += layer.weight.mean()
+                    weight_std += layer.weight.std()
+                    weight_frobenius_norm += torch.norm(layer.weight)
 
-        wandb.log({
-            'zc-all-biases-mean': bias_mean / count,
-            'zc-all-biases-std': bias_std / count,
-            'zc-all-weights-mean': weight_mean / count,
-            'zc-all-weights-std': weight_std / count,
-        })
+                    wandb.log({
+                        f'{i}-zc-bias-std': layer.bias.std(),
+                        f'{i}-zc-bias-mean': layer.bias.mean(),
+                        f'{i}-zc-weight-std': layer.weight.std(),
+                        f'{i}-zc-weight-mean': layer.weight.mean(),
+                    })
+                    count += 1
+
+                wandb.log({
+                    'zc-all-biases-mean': bias_mean / count,
+                    'zc-all-biases-frobenius': bias_frobenius_norm / count,
+                    'zc-all-biases-std': bias_std / count,
+
+                    'zc-all-weights-mean': weight_mean / count,
+                    'zc-all-weights-frobenius': weight_frobenius_norm / count,
+                    'zc-all-weights-std': weight_std / count,
+                })
