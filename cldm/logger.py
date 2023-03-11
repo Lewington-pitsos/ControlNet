@@ -52,7 +52,7 @@ class ImageLogger(Callback):
             self.log_img(pl_module, batch, batch_idx, split="train")
 
 class ZeroConvLogger(Callback):
-    def __init__(self, batch_frequency=25) -> None:
+    def __init__(self, batch_frequency=50) -> None:
         super().__init__()
         self.batch_frequency=batch_frequency
 
@@ -83,10 +83,15 @@ class ZeroConvLogger(Callback):
                     weight_frobenius_norm += torch.norm(layer.weight)
 
                     wandb.log({
-                        f'{i}-zc-bias-std': layer.bias.std(),
-                        f'{i}-zc-bias-mean': layer.bias.mean(),
-                        f'{i}-zc-weight-std': layer.weight.std(),
-                        f'{i}-zc-weight-mean': layer.weight.mean(),
+                        f'zc-{i}': {
+                            'bias-std': layer.bias.std(),
+                            'bias-mean': layer.bias.mean(),
+                            'zc-bias-frob': torch.norm(layer.bias),
+                            
+                            'zc-weight-std': layer.weight.std(),
+                            'zc-weight-mean': layer.weight.mean(),
+                            'zc-weight-frob': torch.norm(layer.weight),
+                        }
                     })
                     count += 1
 

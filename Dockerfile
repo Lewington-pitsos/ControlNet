@@ -8,4 +8,4 @@ ADD ./training training
 ADD ./models models
 ADD . .
 
-ENTRYPOINT ["tail", "-f", "/dev/null"]
+ENTRYPOINT ["tail", "-f", "/dev/null"] 
