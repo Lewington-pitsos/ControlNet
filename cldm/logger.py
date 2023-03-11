@@ -1,12 +1,6 @@
-import os
-
-import numpy as np
+import wandb
 import torch
-import torchvision
-from PIL import Image
 from pytorch_lightning.callbacks import Callback
-from pytorch_lightning.utilities.distributed import rank_zero_only
-
 
 class ImageLogger(Callback):
     def __init__(self, batch_frequency=2000, max_images=4, clamp=True, increase_log_steps=True,
@@ -23,21 +17,6 @@ class ImageLogger(Callback):
         self.log_on_batch_idx = log_on_batch_idx
         self.log_images_kwargs = log_images_kwargs if log_images_kwargs else {}
         self.log_first_step = log_first_step
-
-    @rank_zero_only
-    def log_local(self, save_dir, split, images, global_step, current_epoch, batch_idx):
-        root = os.path.join(save_dir, "image_log", split)
-        for k in images:
-            grid = torchvision.utils.make_grid(images[k], nrow=4)
-            if self.rescale:
-                grid = (grid + 1.0) / 2.0  # -1,1 -> 0,1; c,h,w
-            grid = grid.transpose(0, 1).transpose(1, 2).squeeze(-1)
-            grid = grid.numpy()
-            grid = (grid * 255).astype(np.uint8)
-            filename = "{}_gs-{:06}_e-{:06}_b-{:06}.png".format(k, global_step, current_epoch, batch_idx)
-            path = os.path.join(root, filename)
-            os.makedirs(os.path.split(path)[0], exist_ok=True)
-            Image.fromarray(grid).save(path)
 
     def log_img(self, pl_module, batch, batch_idx, split="train"):
         check_idx = batch_idx  # if self.log_on_batch_idx else pl_module.global_step
@@ -62,8 +41,8 @@ class ImageLogger(Callback):
                     if self.clamp:
                         images[k] = torch.clamp(images[k], -1., 1.)
 
-            self.log_local(pl_module.logger.save_dir, split, images,
-                           pl_module.global_step, pl_module.current_epoch, batch_idx)
+            images = wandb.Image(images)
+            wandb.log({"examples": images})
 
             if is_train:
                 pl_module.train()
@@ -74,3 +53,45 @@ class ImageLogger(Callback):
     def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
         if not self.disabled:
             self.log_img(pl_module, batch, batch_idx, split="train")
+
+
+class ZeroConvLogger(Callback):
+  def on_train_batch_end(self, trainer, pl_module):
+      with torch.no_grad():
+        count = 0
+        bias_mean = 0
+        bias_std = 0
+
+        weight_mean = 0
+        weight_std = 0
+
+        for i, c in enumerate(pl_module.control_model.zero_convs):
+        # print(type(c))
+          layer = c[0]
+          # print(type(layer))
+
+          bias_mean += layer.bias.mean()
+          bias_std += layer.bias.std()
+
+          weight_mean += layer.weight.mean()
+          weight_std += layer.weight.std()
+
+          wandb.log({
+              f'{i}-zc-bias-mean': layer.bias.mean(),
+              f'{i}-zc-bias-std': layer.bias.std(),
+              f'{i}-zc-bias-min': layer.bias.min(),
+              f'{i}-zc-bias-max': layer.bias.max(),
+
+              f'{i}-zc-weight-mean': layer.weight.mean(),
+              f'{i}-zc-weight-std': layer.weight.std(),
+              f'{i}-zc-weight-min': layer.weight.min(),
+              f'{i}-zc-weight-max': layer.weight.max(),
+          })
+          count += 1
+
+        wandb.log({
+            'zc-all-biases-mean': bias_mean / count,
+            'zc-all-biases-std': bias_std / count,
+            'zc-all-weights-mean': weight_mean / count,
+            'zc-all-weights-std': weight_std / count,
+        })
