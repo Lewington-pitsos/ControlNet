@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 import colorgram
 from torch.utils.data import Dataset
-from PIL import Image
+from PIL import Image, ImageOps
 import os
 
 class MyDataset(Dataset):
@@ -40,24 +40,22 @@ class MyDataset(Dataset):
         return dict(jpg=target, txt=prompt, hint=source)
 
 class ColorDataset(Dataset):
-    def __init__(self, n_colors=10):
+    def __init__(self, n_colors=10, color_extract_res=256):
         self.data = []
         with open('./training/fill50k/prompt.json', 'rt') as f:
             for line in f:
                 self.data.append(json.loads(line))
         self.n_colors = n_colors
+        self.color_extract_res = color_extract_res
 
     def __len__(self):
         return len(self.data)
 
-    def __getitem__(self, idx):
-        files = ['./training/fill50k/random/' + f for f in os.listdir('./training/fill50k/random/')]
+    def _get_color_hint(self, img):
+        pil_target = Image.fromarray(img)
 
-        file = files[idx]
-
-        target = cv2.imread(file)
-        target = cv2.cvtColor(target, cv2.COLOR_BGR2RGB)
-        pil_target = Image.fromarray(target)
+        if pil_target.width * pil_target.height * 3 > 256 * 256 * 3:
+            pil_target = ImageOps.contain(pil_target, (self.color_extract_res,self.color_extract_res))
 
         colors = colorgram.extract(pil_target, self.n_colors)
 
@@ -69,12 +67,19 @@ class ColorDataset(Dataset):
             color_output[i, 2] = c.rgb.b / 255.0
             color_output[i, 3] = 1.0
 
-        save_as_img(colors, './training/fill50k/colors/' + file.split('/')[-1])
+        return color_output
 
+    def __getitem__(self, idx):
+        files = ['./training/fill50k/random/' + f for f in os.listdir('./training/fill50k/random/')]
+
+        file = files[idx]
+        target = cv2.imread(file)
+        target = cv2.cvtColor(target, cv2.COLOR_BGR2RGB)
+        color_hint = self._get_color_hint(target)
         # Normalize target images to [-1, 1].
         target = (target.astype(np.float32) / 127.5) - 1.0
 
-        return dict(jpg=target, txt="lol", hint=color_output)
+        return dict(jpg=target, txt="lol", hint=color_hint)
 
 # saves a new image with the colors from colorgram Color class
 # aligned horizontally as bands in a 256x256 image
@@ -88,4 +93,4 @@ if __name__ == '__main__':
     dataset = ColorDataset()
     print(len(dataset))
     for i in range(100):
-        print(dataset[i]['hint'])
+        dataset[i]['hint']
