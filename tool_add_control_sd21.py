@@ -1,7 +1,7 @@
 import sys
 import os
 
-assert len(sys.argv) == 3, 'Args are wrong.'
+assert len(sys.argv) == 4, 'Args are wrong.'
 
 input_path = sys.argv[1]
 output_path = sys.argv[2]
