@@ -9,6 +9,7 @@ import argparse
 
 parser = argparse.ArgumentParser()
 
+parser.add_argument('--model_config_path', type=str)
 parser.add_argument('--resume_path', type=str, default='./models/control_sd21_ini.ckpt')
 parser.add_argument('--batch_size', type=int, default=1)
 parser.add_argument('--img_logger_freq', type=int, default=300)
@@ -23,7 +24,7 @@ parser.add_argument('--experiment_name', type=str, default='controlnet-ablation-
 args = parser.parse_args()
 
 # First use cpu to load models. Pytorch Lightning will automatically move it to GPUs.
-model = create_model('./models/cldm_v21.yaml').cpu()
+model = create_model(args.model_config_path).cpu()
 model.load_state_dict(load_state_dict(args.resume_path, location='cpu'))
 model.learning_rate = args.learning_rate
 model.sd_locked = args.sd_locked

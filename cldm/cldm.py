@@ -75,6 +75,7 @@ class ControlNet(nn.Module):
             num_attention_blocks=None,
             disable_middle_self_attn=False,
             use_linear_in_transformer=False,
+            normal_1x1_conv=False,
     ):
         super().__init__()
         if use_spatial_transformer:
@@ -99,6 +100,7 @@ class ControlNet(nn.Module):
         self.image_size = image_size
         self.in_channels = in_channels
         self.model_channels = model_channels
+        self.normal_1x1_conv = normal_1x1_conv
         if isinstance(num_res_blocks, int):
             self.num_res_blocks = len(channel_mult) * [num_res_blocks]
         else:
@@ -142,7 +144,7 @@ class ControlNet(nn.Module):
                 )
             ]
         )
-        self.zero_convs = nn.ModuleList([self.make_zero_conv(model_channels)])
+        self.zero_convs = nn.ModuleList([self.make_zero_conv(model_channels, normal_1x1_conv=self.normal_1x1_conv)])
 
         self.input_hint_block = TimestepEmbedSequential(
             conv_nd(dims, hint_channels, 16, 3, padding=1),
@@ -209,7 +211,7 @@ class ControlNet(nn.Module):
                             )
                         )
                 self.input_blocks.append(TimestepEmbedSequential(*layers))
-                self.zero_convs.append(self.make_zero_conv(ch))
+                self.zero_convs.append(self.make_zero_conv(ch, normal_1x1_conv=self.normal_1x1_conv))
                 self._feature_size += ch
                 input_block_chans.append(ch)
             if level != len(channel_mult) - 1:
@@ -234,7 +236,7 @@ class ControlNet(nn.Module):
                 )
                 ch = out_ch
                 input_block_chans.append(ch)
-                self.zero_convs.append(self.make_zero_conv(ch))
+                self.zero_convs.append(self.make_zero_conv(ch, normal_1x1_conv=self.normal_1x1_conv))
                 ds *= 2
                 self._feature_size += ch
 
@@ -275,11 +277,16 @@ class ControlNet(nn.Module):
                 use_scale_shift_norm=use_scale_shift_norm,
             ),
         )
-        self.middle_block_out = self.make_zero_conv(ch)
+        self.middle_block_out = self.make_zero_conv(ch, normal_1x1_conv=self.normal_1x1_conv)
         self._feature_size += ch
 
-    def make_zero_conv(self, channels):
-        return TimestepEmbedSequential(zero_module(conv_nd(self.dims, channels, channels, 1, padding=0)))
+    def make_zero_conv(self, channels, normal_1x1_conv=False):
+        conv_module = conv_nd(self.dims, channels, channels, 1, padding=0)
+
+        if normal_1x1_conv:
+            return TimestepEmbedSequential(conv_module)
+
+        return TimestepEmbedSequential(zero_module(conv_module))
 
     def forward(self, x, hint, timesteps, context, **kwargs):
         t_emb = timestep_embedding(timesteps, self.model_channels, repeat_only=False)

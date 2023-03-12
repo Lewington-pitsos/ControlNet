@@ -5,6 +5,7 @@ assert len(sys.argv) == 3, 'Args are wrong.'
 
 input_path = sys.argv[1]
 output_path = sys.argv[2]
+config_path = sys.argv[3]
 
 assert os.path.exists(input_path), 'Input model does not exist.'
 assert not os.path.exists(output_path), 'Output filename already exists.'
@@ -24,7 +25,7 @@ def get_node_name(name, parent_name):
     return True, name[len(parent_name):]
 
 
-model = create_model(config_path='./models/cldm_v21.yaml')
+model = create_model(config_path=config_path)
 
 pretrained_weights = torch.load(input_path)
 if 'state_dict' in pretrained_weights:
