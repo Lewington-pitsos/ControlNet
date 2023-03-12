@@ -8,4 +8,6 @@ ADD ./training training
 ADD ./models models
 ADD . .
 
+RUN pip install colorgram.py
+
 ENTRYPOINT ["tail", "-f", "/dev/null"] 
