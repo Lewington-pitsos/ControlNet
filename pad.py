@@ -38,10 +38,6 @@ pl_module.only_mid_control = args.only_mid_control
 
 with torch.no_grad():
     count = 0
-    bias_mean = 0
-    bias_std = 0
-    bias_frobenius_norm = 0
-
     weight_mean = 0
     weight_std = 0
     weight_frobenius_norm = 0
@@ -49,20 +45,12 @@ with torch.no_grad():
     for i, c in enumerate(pl_module.control_model.zero_convs):
         layer = c[0]
 
-        bias_mean += layer.bias.mean()
-        bias_std += layer.bias.std()
-        bias_frobenius_norm += torch.norm(layer.bias)
-
         weight_mean += layer.weight.mean()
         weight_std += layer.weight.std()
         weight_frobenius_norm += torch.norm(layer.weight)
 
         print({
-            f'zc-{i}': {
-                'bias-std': layer.bias.std(),
-                'bias-mean': layer.bias.mean(),
-                'zc-bias-frob': torch.norm(layer.bias),
-                
+            f'zc-{i}': {                
                 'zc-weight-std': layer.weight.std(),
                 'zc-weight-mean': layer.weight.mean(),
                 'zc-weight-frob': torch.norm(layer.weight),
@@ -71,11 +59,7 @@ with torch.no_grad():
         count += 1
 
         print({
-        'zc-all-biases-mean': bias_mean / count,
-        'zc-all-biases-frobenius': bias_frobenius_norm / count,
-        'zc-all-biases-std': bias_std / count,
-
-        'zc-all-weights-mean': weight_mean / count,
-        'zc-all-weights-frobenius': weight_frobenius_norm / count,
-        'zc-all-weights-std': weight_std / count,
+            'zc-all-weights-mean': weight_mean / count,
+            'zc-all-weights-frobenius': weight_frobenius_norm / count,
+            'zc-all-weights-std': weight_std / count,
         })

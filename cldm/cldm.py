@@ -18,15 +18,13 @@ from ldm.models.diffusion.ddpm import LatentDiffusion
 from ldm.util import log_txt_as_img, exists, instantiate_from_config
 from ldm.models.diffusion.ddim import DDIMSampler
 
-
 class Singleton(torch.nn.Module):
     def __init__(self):
         super().__init__()
         self.weight = torch.nn.Parameter(torch.Tensor([0]))
-        self.bias = torch.nn.Parameter(torch.Tensor([0]))
 
     def forward(self, x):
-        return x * self.weight + self.bias
+        return x * self.weight
 
 class ControlledUnetModel(UNetModel):
     def forward(self, x, timesteps=None, context=None, control=None, only_mid_control=False, **kwargs):
