@@ -19,6 +19,15 @@ from ldm.util import log_txt_as_img, exists, instantiate_from_config
 from ldm.models.diffusion.ddim import DDIMSampler
 
 
+class Singleton(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.weight = torch.nn.Parameter(torch.Tensor([0]))
+        self.bias = torch.nn.Parameter(torch.Tensor([0]))
+
+    def forward(self, x):
+        return x * self.weight + self.bias
+
 class ControlledUnetModel(UNetModel):
     def forward(self, x, timesteps=None, context=None, control=None, only_mid_control=False, **kwargs):
         hs = []
@@ -75,7 +84,7 @@ class ControlNet(nn.Module):
             num_attention_blocks=None,
             disable_middle_self_attn=False,
             use_linear_in_transformer=False,
-            normal_1x1_conv=False,
+            zero_conv_type='zero_conv',
     ):
         super().__init__()
         if use_spatial_transformer:
@@ -100,7 +109,7 @@ class ControlNet(nn.Module):
         self.image_size = image_size
         self.in_channels = in_channels
         self.model_channels = model_channels
-        self.normal_1x1_conv = normal_1x1_conv
+        self.zero_conv_type = zero_conv_type
         if isinstance(num_res_blocks, int):
             self.num_res_blocks = len(channel_mult) * [num_res_blocks]
         else:
@@ -144,7 +153,7 @@ class ControlNet(nn.Module):
                 )
             ]
         )
-        self.zero_convs = nn.ModuleList([self.make_zero_conv(model_channels, normal_1x1_conv=self.normal_1x1_conv)])
+        self.zero_convs = nn.ModuleList([self.make_zero_conv(model_channels, zero_conv_type=self.zero_conv_type)])
 
         self.input_hint_block = TimestepEmbedSequential(
             conv_nd(dims, hint_channels, 16, 3, padding=1),
@@ -211,7 +220,7 @@ class ControlNet(nn.Module):
                             )
                         )
                 self.input_blocks.append(TimestepEmbedSequential(*layers))
-                self.zero_convs.append(self.make_zero_conv(ch, normal_1x1_conv=self.normal_1x1_conv))
+                self.zero_convs.append(self.make_zero_conv(ch, zero_conv_type=self.zero_conv_type))
                 self._feature_size += ch
                 input_block_chans.append(ch)
             if level != len(channel_mult) - 1:
@@ -236,7 +245,7 @@ class ControlNet(nn.Module):
                 )
                 ch = out_ch
                 input_block_chans.append(ch)
-                self.zero_convs.append(self.make_zero_conv(ch, normal_1x1_conv=self.normal_1x1_conv))
+                self.zero_convs.append(self.make_zero_conv(ch, zero_conv_type=self.zero_conv_type))
                 ds *= 2
                 self._feature_size += ch
 
@@ -277,16 +286,22 @@ class ControlNet(nn.Module):
                 use_scale_shift_norm=use_scale_shift_norm,
             ),
         )
-        self.middle_block_out = self.make_zero_conv(ch, normal_1x1_conv=self.normal_1x1_conv)
+        self.middle_block_out = self.make_zero_conv(ch, zero_conv_type=self.zero_conv_type)
         self._feature_size += ch
 
-    def make_zero_conv(self, channels, normal_1x1_conv=False):
+    def make_zero_conv(self, channels, zero_conv_type='zero_conv'):
+        if zero_conv_type == 'singleton':
+            return TimestepEmbedSequential(Singleton())
+        
         conv_module = conv_nd(self.dims, channels, channels, 1, padding=0)
 
-        if normal_1x1_conv:
+        if zero_conv_type == 'zero_conv':
+            return TimestepEmbedSequential(zero_module(conv_module))
+
+        if zero_conv_type == 'normal_1x1_conv':
             return TimestepEmbedSequential(conv_module)
 
-        return TimestepEmbedSequential(zero_module(conv_module))
+        raise ValueError(f'Unknown zero conv layer type: {zero_conv_type}')
 
     def forward(self, x, hint, timesteps, context, **kwargs):
         t_emb = timestep_embedding(timesteps, self.model_channels, repeat_only=False)

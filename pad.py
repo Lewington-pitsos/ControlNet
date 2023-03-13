@@ -1,3 +1,7 @@
+def interact():
+    import code
+    code.InteractiveConsole(locals=globals()).interact()
+
 from share import *
 import wandb
 import pytorch_lightning as pl
@@ -32,9 +36,6 @@ pl_module.sd_locked = args.sd_locked
 pl_module.only_mid_control = args.only_mid_control
 
 
-
-
-
 with torch.no_grad():
     count = 0
     bias_mean = 0
@@ -44,7 +45,7 @@ with torch.no_grad():
     weight_mean = 0
     weight_std = 0
     weight_frobenius_norm = 0
-
+    
     for i, c in enumerate(pl_module.control_model.zero_convs):
         layer = c[0]
 
@@ -69,7 +70,7 @@ with torch.no_grad():
         })
         count += 1
 
-    print({
+        print({
         'zc-all-biases-mean': bias_mean / count,
         'zc-all-biases-frobenius': bias_frobenius_norm / count,
         'zc-all-biases-std': bias_std / count,
@@ -77,4 +78,4 @@ with torch.no_grad():
         'zc-all-weights-mean': weight_mean / count,
         'zc-all-weights-frobenius': weight_frobenius_norm / count,
         'zc-all-weights-std': weight_std / count,
-    })
+        })
