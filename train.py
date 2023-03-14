@@ -29,7 +29,8 @@ parser.add_argument('--hint_proportion', type=float, default=0.35)
 parser.add_argument('--sd_locked', type=bool, default=True)
 parser.add_argument('--only_mid_control', type=bool, default=False)
 parser.add_argument('--accumulate_grad_batches', type=int, default=None)
-parser.add_argument('--max-steps', type=int, default=4000)
+parser.add_argument('--max_steps', type=int, default=4000)
+parser.add_argument('--val_check_interval', type=int, default=500)
 parser.add_argument('--experiment_name', type=str, default='')
 
 args = parser.parse_args()
@@ -68,9 +69,9 @@ def perform_training_run(args):
     )
 
     img_logger = ImageLogger(batch_frequency=args.img_logger_freq)
-    checkpoint_callback = ModelCheckpoint(monitor="val_accuracy", mode="max")
     zc_logger = ZeroConvLogger(args.zc_logger_freq)
-    
+    save_checkpoints = ModelCheckpoint(dirpath="models/")
+
     training_logger = True
     if args.experiment_name != '':
         wandb_logger = WandbLogger(project=args.experiment_name)
@@ -81,12 +82,12 @@ def perform_training_run(args):
         accelerator='gpu', 
         devices=1,
         precision=32, 
-        callbacks=[img_logger, zc_logger, checkpoint_callback], 
+        callbacks=[img_logger, zc_logger, save_checkpoints], 
         logger=training_logger, 
         accumulate_grad_batches=model.hparams['accumulate_grad_batches'],
         log_every_n_steps=args.zc_logger_freq,
         max_steps=model.hparams['max_steps'],
-        val_check_interval=500
+        val_check_interval=args.val_check_interval,
     )
 
     trainer.fit(model, train_dl, test_dl)
