@@ -452,6 +452,11 @@ class DDPM(pl.LightningModule):
             self.log('lr_abs', lr, prog_bar=True, logger=True, on_step=True, on_epoch=False)
 
         return loss
+    
+    def on_train_start(self):
+        print('logging hyperparameters', self.hparams)
+        self.logger.log_hyperparams(self.hparams)
+
 
     @torch.no_grad()
     def validation_step(self, batch, batch_idx):

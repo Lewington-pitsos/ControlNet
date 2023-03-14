@@ -1,8 +1,7 @@
 from share import *
 
 import pytorch_lightning as pl
-from torch.utils.data import DataLoader
-from tutorial_dataset import MyDataset
+from wds_load import load_laion
 from cldm.logger import ImageLogger
 from cldm.model import create_model, load_state_dict
 
@@ -23,13 +22,13 @@ model.learning_rate = learning_rate
 model.sd_locked = sd_locked
 model.only_mid_control = only_mid_control
 
-
-# Misc
-dataset = MyDataset()
-dataloader = DataLoader(dataset, num_workers=0, batch_size=batch_size, shuffle=True)
+train_dl, test_dl = load_laion(
+    batch_size, 
+    'training/laion-20-data/{00000..00008}.tar', 
+    'training/laion-20-data/00009.tar', 
+    proportion=0.2
+)
 logger = ImageLogger(batch_frequency=logger_freq)
 trainer = pl.Trainer(gpus=1, precision=32, callbacks=[logger])
 
-
-# Train!
-trainer.fit(model, dataloader)
+trainer.validate(model, test_dl)

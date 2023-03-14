@@ -21,8 +21,7 @@ def make_parser(proportion):
 
     return get_item
 
-
-def load_laion100k(batch_size, train_url, test_url, proportion):
+def load_laion(batch_size, train_url, test_url, proportion):
     parser = make_parser(proportion)
     train = wds.WebDataset(train_url).map(parser)
     test = wds.WebDataset(test_url).map(parser)
@@ -33,7 +32,7 @@ def load_laion100k(batch_size, train_url, test_url, proportion):
     return train_dl, test_dl
 
 # load_laion100k(4, 'training/laion-100k/part-00000-5114fd87-297e-42b0-9d11-50f1df323dfa-c000.snappy.parquet', n_samples=100_000, train_size=99_000)
-load_laion100k(
+load_laion(
     4, 
     'training/laion-20-data/{00000..00008}.tar', 
     'training/laion-20-data/00009.tar', 
