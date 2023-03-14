@@ -47,7 +47,7 @@ class ImageLogger(Callback):
     def check_frequency(self, check_idx):
         return check_idx % self.batch_freq == 0
 
-    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
+    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=None):
         if not self.disabled:
             self.log_img(pl_module, batch, batch_idx, split="train")
 
@@ -62,8 +62,8 @@ class ZeroConvLogger(Callback):
     def on_train_start(self, trainer, pl_module):
         self.on_train_batch_end(trainer, pl_module, None, None, 0, None)
 
-    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
-        if self.check_frequency(batch_idx):
+    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=None):
+        if self.check_frequency(batch_idx) and pl_module.control_model is not None:
             with torch.no_grad():
                 count = 0
 
