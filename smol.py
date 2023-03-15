@@ -1,13 +1,15 @@
 import torch.nn.functional as F
 import torch
 import pytorch_lightning as pl
+import torch.nn as nn
+from cldm.cldm import RisingWeight
 
 class Smol(pl.LightningModule):
     def __init__(self):
         super().__init__()
         self.control_model=None
 
-        self.inconv = torch.nn.Conv2d(3, 3, 1)
+        self.inconv = RisingWeight(torch.nn.Conv2d(3, 3, 1))
 
         # l1 = 
 

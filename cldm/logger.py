@@ -71,7 +71,7 @@ class ZeroConvLogger(Callback):
                 weight_std = 0
                 weight_frobenius_norm = 0
 
-                for i, c in enumerate(pl_module.control_model.zero_convs):
+                for i, c in enumerate(pl_module.control_model.zero_convs):              
                     layer = c[0]
 
                     weight_mean += layer.weight.mean()
@@ -86,6 +86,11 @@ class ZeroConvLogger(Callback):
                         }
                     })
                     count += 1
+
+                if hasattr(c, 'weight_factor'):
+                    wandb.log({
+                        'weight-factor': c.weight_factor
+                    })
 
                 wandb.log({
                     'zc-all-weights-mean': weight_mean / count,

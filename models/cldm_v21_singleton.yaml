@@ -35,7 +35,7 @@ model:
         transformer_depth: 1
         context_dim: 1024
         legacy: False
-        zero_conv_type: 'singleton'
+        zero_conv_type: 'rising_conv'
 
     unet_config:
       target: cldm.cldm.ControlledUnetModel

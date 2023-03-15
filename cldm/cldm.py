@@ -3,6 +3,31 @@ import torch
 import torch as th
 import torch.nn as nn
 
+class RisingWeight(nn.Sequential):
+    def __init__(self, module, start=1e-5, steps=50):
+        super().__init__(module)
+        self.weight_factor=start 
+        self.steps=steps
+        self.increment = 1 / steps - start
+
+    def forward(self, x):
+        initial = x
+        for layer in self:
+            x = layer(x)
+        
+        if self.weight_factor >= 1:
+            return x
+
+        x = x * self.weight_factor + initial * (1 - self.weight_factor)
+
+        self.weight_factor += self.increment
+
+        return x
+
+class TimestepRisingWeight(RisingWeight):
+    def forward(self, x, emb, context=None):
+        return super().forward(x)
+
 from ldm.modules.diffusionmodules.util import (
     conv_nd,
     linear,
@@ -292,6 +317,9 @@ class ControlNet(nn.Module):
             return TimestepEmbedSequential(Singleton())
         
         conv_module = conv_nd(self.dims, channels, channels, 1, padding=0)
+
+        if zero_conv_type == 'rising_conv':
+            return TimestepRisingWeight(conv_module)
 
         if zero_conv_type == 'zero_conv':
             return TimestepEmbedSequential(zero_module(conv_module))
