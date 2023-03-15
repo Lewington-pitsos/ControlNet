@@ -77,7 +77,7 @@ def perform_training_run(args: DictConfig):
         val_check_interval=args.val_check_interval,
     )
 
-    # trainer.validate(model, train_dl)
+    trainer.validate(model, train_dl)
     trainer.fit(model, train_dl, test_dl)
 
     if args.use_wandb:
