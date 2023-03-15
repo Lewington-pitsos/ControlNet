@@ -1,11 +1,11 @@
 {
     "runs": [
         {
-            "run_name": "laion-100k-zconv",
+            "run_name": "laion-100k-zconv-test",
             "experiment_name": "laion-100k",
             "model_config_path": "models/cldm_v21.yaml",
-            "train_url": "training/laion-100k-data/{00000..00199}.tar",
-            "test_url": "training/laion-100k-data/00200.tar",
+            "train_url": "training/laion-20-data/{00000..00008}.tar",
+            "test_url": "training/laion-100k-data/00009.tar",
             "resume_path": "checkpoints/cldm.ckpt",
             "batch_size": 4,
             "img_logger_freq": 500,
@@ -19,11 +19,11 @@
             "use_wandb": true
         },
         {
-            "run_name": "laion-100k-normal-conv",
+            "run_name": "laion-100k-normal-conv-test",
             "experiment_name": "laion-100k",
             "model_config_path": "models/cldm_v21_normal_conv.yaml",
-            "train_url": "training/laion-100k-data/{00000..00199}.tar",
-            "test_url": "training/laion-100k-data/00200.tar",
+            "train_url": "training/laion-20-data/{00000..00008}.tar",
+            "test_url": "training/laion-100k-data/00009.tar",
             "resume_path": "checkpoints/cldm_normal.ckpt",
             "batch_size": 4,
             "img_logger_freq": 500,
@@ -37,11 +37,11 @@
             "use_wandb": true
         },
         {
-            "run_name": "laion-100k-singleton",
+            "run_name": "laion-100k-singleton-test",
             "experiment_name": "laion-100k",
             "model_config_path": "models/cldm_v21_singleton.yaml",
-            "train_url": "training/laion-100k-data/{00000..00199}.tar",
-            "test_url": "training/laion-100k-data/00200.tar",
+            "train_url": "training/laion-20-data/{00000..00008}.tar",
+            "test_url": "training/laion-100k-data/00009.tar",
             "resume_path": "checkpoints/cldm_singleton.ckpt",
             "batch_size": 4,
             "img_logger_freq": 500,
@@ -55,11 +55,11 @@
             "use_wandb": true
         },
         {
-            "run_name": "laion-100k-rising",
+            "run_name": "laion-100k-rising-test",
             "experiment_name": "laion-100k",
             "model_config_path": "models/cldm_v21_rising.yaml",
-            "train_url": "training/laion-100k-data/{00000..00199}.tar",
-            "test_url": "training/laion-100k-data/00200.tar",
+            "train_url": "training/laion-20-data/{00000..00008}.tar",
+            "test_url": "training/laion-100k-data/00009.tar",
             "resume_path": "checkpoints/cldm_rising.ckpt",
             "batch_size": 4,
             "img_logger_freq": 500,
