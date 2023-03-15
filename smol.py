@@ -15,19 +15,28 @@ class Smol(pl.LightningModule):
         pass
 
     def validation_step(self, batch, batch_idx):
-        return {'loss': torch.tensor(0.)}
+        loss = self._step(batch, batch_idx)    
+
+        self.log_dict(dict(val_loss=loss))
+
+        return loss
     
     def on_train_start(self):
         self.logger.log_hyperparams(self.hparams)
 
-    def training_step(self, batch, batch_idx):
+    def _step(self, batch, batch_idx):
         img = batch['jpg'].permute(0, 3, 1, 2)
 
         y_hat = self(img, batch['pixel_hint'], 0, None)
 
         loss = F.cross_entropy(y_hat, img)
-        self.log_dict(dict(train_loss=loss))
         
+        return loss
+    
+    def training_step(self, batch, batch_idx):
+        loss = self._step(batch, batch_idx)    
+    
+        self.log_dict(dict(train_loss=loss))
         return loss
 
     def forward(self, x, hint, timesteps, context, **kwargs):

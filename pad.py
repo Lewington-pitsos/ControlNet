@@ -1,5 +1,4 @@
-from smol import Smol
+from omegaconf import OmegaConf
+conf = OmegaConf.create()
 
-q = Smol.load_from_checkpoint('models\epoch=6-step=100.ckpt')
-
-print(q)
+print(conf.get('lol'))

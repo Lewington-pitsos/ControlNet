@@ -1,0 +1,21 @@
+{
+    "runs": [
+        {
+            "run_name": "laion-20",
+            "model_config_path": "models/smol.yaml",
+            "train_url": "training/laion-20-data/{00000..00008}.tar",
+            "test_url": "training/laion-20-data/00009.tar",
+            "resume_path": "",
+            "batch_size": 1,
+            "img_logger_freq": 300,
+            "zc_logger_freq": 50,
+            "learning_rate": 1e-5,
+            "hint_proportion": 0.35,
+            "sd_locked": true,
+            "only_mid_control": false,
+            "max_steps": 100,
+            "val_check_interval": 10,
+            "use_wandb": false
+        }
+    ]
+}
