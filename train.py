@@ -61,9 +61,9 @@ def perform_training_run(args: DictConfig):
 
     training_logger = True
     if args.use_wandb:
-        wandb_logger = WandbLogger(project=args.run_name)
+        wandb_logger = WandbLogger(project=args.experiment_name)
         training_logger = [wandb_logger]
-        wandb.init(project=args.run_name)
+        wandb.init(project=args.experiment_name)
     
     trainer = pl.Trainer(
         accelerator='gpu', 
@@ -85,7 +85,7 @@ def perform_training_run(args: DictConfig):
         wandb.finish()
 
 parser = argparse.ArgumentParser(description='Perform training runs')
-parser.add_argument('run_file', type=str, default='runs.json', help='Path to the file containing run config')
+parser.add_argument('--run_file', type=str, default='runs.json', help='Path to the file containing run config')
 args = parser.parse_args()
 
 if __name__ == '__main__':
